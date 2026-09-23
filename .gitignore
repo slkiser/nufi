@@ -1,0 +1,46 @@
+# Xcode and Swift build output
+build/
+DerivedData/
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+*.xcuserstate
+*.xcuserdatad/
+.build/
+Packages/
+Package.resolved
+*.xcarchive
+*.app/
+
+# Release artifacts until deliberately published
+*.dmg
+*.zip
+release/
+
+# macOS and editors
+.DS_Store
+.vscode/
+.idea/
+
+# Local notes and generated documents. Track only approved root Markdown files.
+*.md
+!/README.md
+docs/
+notes/
+scratch/
+work/
+*.txt
+*.pdf
+*.docx
+*.pages
+*.rtf
+AGENTS.md
+CLAUDE.md
+.agents*
+
+# Secrets and local caches
+.env
+.env.*
+!.env.example
+.build-cli/
+.wrangler/

@@ -1,0 +1,100 @@
+name: Nufi
+options:
+  bundleIdPrefix: dev.slkiser
+  deploymentTarget:
+    macOS: "13.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: 28W383DD2Q
+    ENABLE_HARDENED_RUNTIME: YES
+  configs:
+    Debug:
+      CODE_SIGN_STYLE: Automatic
+      CODE_SIGN_IDENTITY: "Apple Development"
+    Release:
+      CODE_SIGN_STYLE: Automatic
+      CODE_SIGN_IDENTITY: "Apple Development"
+
+targets:
+  Nufi:
+    type: application
+    platform: macOS
+    sources:
+      - path: App
+      - path: Shared
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleName: Nufi
+        CFBundleDisplayName: Nufi
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        LSApplicationCategoryType: public.app-category.utilities
+        LSUIElement: true
+        NSHumanReadableCopyright: "Copyright © 2026 Shawn Kiser. MIT licensed."
+        NSAppleEventsUsageDescription: "Nufi selects the new file in Finder and starts renaming so you can type its name."
+        NSAccessibilityUsageDescription: "Nufi starts Finder's inline rename after creating a file so the basename is ready to type."
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.slkiser.nufi
+        CODE_SIGN_ENTITLEMENTS: App/Nufi.entitlements
+        INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2026 Shawn Kiser. MIT licensed."
+        ASSETCATALOG_COMPILER_APPICON_NAME: Nufi
+    dependencies:
+      - target: NufiExtension
+        embed: true
+      - sdk: FinderSync.framework
+
+  NufiExtension:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Extension
+      - path: Shared
+    info:
+      path: Extension/Info.plist
+      properties:
+        CFBundleName: NufiExtension
+        CFBundleDisplayName: Nufi Extension
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.FinderSync
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).FinderSync
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.slkiser.nufi.FinderExtension
+        CODE_SIGN_ENTITLEMENTS: Extension/NufiExtension.entitlements
+
+  NufiTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.slkiser.nufi.NufiTests
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGNING_ALLOWED: NO
+
+schemes:
+  Nufi:
+    build:
+      targets:
+        Nufi: all
+        NufiExtension: [build]
+        NufiTests: [test]
+    test:
+      targets:
+        - NufiTests
+      gatherCoverageData: false
