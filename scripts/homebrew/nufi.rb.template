@@ -1,0 +1,23 @@
+cask "nufi" do
+  version "__VERSION__"
+  sha256 "__SHA256__"
+
+  url "https://github.com/slkiser/nufi/releases/download/v#{version}/Nufi-#{version}.dmg"
+  name "Nufi"
+  desc "Paste copied text as a new file in the Finder folder you already have open"
+  homepage "https://github.com/slkiser/nufi"
+
+  depends_on macos: ">= :ventura"
+
+  app "Nufi.app"
+
+  uninstall quit: "dev.slkiser.nufi"
+
+  zap trash: [
+    "~/Library/Group Containers/28W383DD2Q.dev.slkiser.nufi",
+  ]
+
+  caveats <<~EOS
+    Open Nufi once, then turn on "Nufi Extension" when the setup checklist asks.
+  EOS
+end
