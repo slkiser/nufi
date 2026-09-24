@@ -41,12 +41,33 @@ struct SetupStatus: Equatable {
     /// Reads the Automation grant without prompting. Any reply, including
     /// "event not handled", means the consent check passed.
     private static func automation(for bundleID: String) -> Automation {
+        let result: Automation
         switch probe(bundleID, options: [.waitForReply, doNotPrompt]) {
-        case 0, -1708: return .granted
-        case -1743: return .denied
-        case -1744: return .notAsked
-        default: return .unknown  // -600: target app not running
+        case 0, -1708: result = .granted
+        case -1743: result = .denied
+        case -1744: result = .notAsked
+        default: result = .unknown  // -600: target app not running
         }
+        return remember(result, for: bundleID)
+    }
+
+    /// System Events quits itself when idle, and a probe then only says "not
+    /// running". Keep the last real answer so a granted step stays granted.
+    private static func remember(_ result: Automation, for bundleID: String) -> Automation {
+        let key = "automation.\(bundleID)"
+        let defaults = UserDefaults.standard
+        switch result {
+        case .granted: defaults.set("granted", forKey: key)
+        case .denied: defaults.set("denied", forKey: key)
+        case .notAsked: defaults.removeObject(forKey: key)
+        case .unknown:
+            switch defaults.string(forKey: key) {
+            case "granted": return .granted
+            case "denied": return .denied
+            default: return .unknown
+            }
+        }
+        return result
     }
 
     /// Sends a harmless get-data event; the target answers "not handled" once
