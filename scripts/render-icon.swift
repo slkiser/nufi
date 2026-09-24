@@ -3,8 +3,8 @@ import AppKit
 
 /// Renders Nufi's app icon on Apple's macOS grid: a 824 pt rounded square
 /// centred on a 1024 canvas with transparent margins, so the Dock shows it
-/// at the same size as every other app. Writes the appiconset PNGs and a
-/// 1024 master into App/Assets.xcassets/Nufi.appiconset.
+/// at the same size as every other app. Writes the appiconset PNGs into
+/// App/Assets.xcassets/Nufi.appiconset.
 
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
 let out = root.appendingPathComponent("App/Assets.xcassets/Nufi.appiconset")
@@ -19,40 +19,48 @@ func rgb(_ hex: UInt32, _ a: CGFloat = 1) -> NSColor {
 func draw(size: CGFloat) -> NSImage {
     let image = NSImage(size: NSSize(width: size, height: size))
     image.lockFocus()
-    let s = size / 1024
+    // Artwork is laid out on a 940 pt plate at (42, 42), then scaled about the
+    // centre to Apple's 824 pt plate.
+    let k: CGFloat = 824 / 940
+    let s = size / 1024 * k
+    let o = (1024 - 1024 * k) / 2 * size / 1024
     let ctx = NSGraphicsContext.current!
     ctx.imageInterpolation = .high
-    // Top-down 1024 coordinates like the SVG layers; `y` flips for AppKit.
-    func y(_ v: CGFloat) -> CGFloat { (1024 - v) * s }
-    func x(_ v: CGFloat) -> CGFloat { v * s }
+    // Top-down 1024 coordinates; `y` flips for AppKit. `dy` shifts the page and
+    // badge (not the plate) so they sit optically centred.
+    var dy: CGFloat = 0
+    func y(_ v: CGFloat) -> CGFloat { (1024 - (v + dy)) * s + o }
+    func x(_ v: CGFloat) -> CGFloat { v * s + o }
     func pt(_ px: CGFloat, _ py: CGFloat) -> NSPoint { NSPoint(x: x(px), y: y(py)) }
 
-    // Plate: 940 pt with a vertical gradient and a glass sheen on top.
+    // Plate: vertical gradient and a glass sheen on top.
     let plateRect = NSRect(x: x(42), y: y(982), width: 940 * s, height: 940 * s)
     let plate = NSBezierPath(roundedRect: plateRect, xRadius: 210 * s, yRadius: 210 * s)
     NSGradient(starting: rgb(0x2C2825), ending: rgb(0x131110))!.draw(in: plate, angle: -90)
     ctx.saveGraphicsState()
     plate.addClip()
     NSGradient(colorsAndLocations: (rgb(0xFFFFFF, 0.14), 0), (rgb(0xFFFFFF, 0.0), 0.55))!
-        .draw(in: NSRect(x: x(42), y: y(982), width: 940 * s, height: 940 * s), angle: -90)
+        .draw(in: plateRect, angle: -90)
     // Inner rim highlight along the top edge.
     let rim = NSBezierPath(roundedRect: plateRect.insetBy(dx: 3 * s, dy: 3 * s), xRadius: 207 * s, yRadius: 207 * s)
     rim.lineWidth = 4 * s
     rgb(0xFFFFFF, 0.18).setStroke()
     rim.stroke()
     ctx.restoreGraphicsState()
+    dy = -18
 
     // Paper sheet with a folded corner, casting a soft shadow.
+    let (L, R, T, B, F): (CGFloat, CGFloat, CGFloat, CGFloat, CGFloat) = (241, 751, 161, 863, 150)
     let sheet = NSBezierPath()
-    sheet.move(to: pt(296, 168))
-    sheet.line(to: pt(632, 168))
-    sheet.line(to: pt(762, 298))
-    sheet.line(to: pt(762, 822))
-    sheet.curve(to: pt(728, 856), controlPoint1: pt(762, 841), controlPoint2: pt(747, 856))
-    sheet.line(to: pt(296, 856))
-    sheet.curve(to: pt(262, 822), controlPoint1: pt(277, 856), controlPoint2: pt(262, 841))
-    sheet.line(to: pt(262, 202))
-    sheet.curve(to: pt(296, 168), controlPoint1: pt(262, 183), controlPoint2: pt(277, 168))
+    sheet.move(to: pt(L + 34, T))
+    sheet.line(to: pt(R - F, T))
+    sheet.line(to: pt(R, T + F))
+    sheet.line(to: pt(R, B - 34))
+    sheet.curve(to: pt(R - 34, B), controlPoint1: pt(R, B - 15), controlPoint2: pt(R - 15, B))
+    sheet.line(to: pt(L + 34, B))
+    sheet.curve(to: pt(L, B - 34), controlPoint1: pt(L + 15, B), controlPoint2: pt(L, B - 15))
+    sheet.line(to: pt(L, T + 34))
+    sheet.curve(to: pt(L + 34, T), controlPoint1: pt(L, T + 15), controlPoint2: pt(L + 15, T))
     sheet.close()
     ctx.saveGraphicsState()
     let shadow = NSShadow()
@@ -68,18 +76,18 @@ func draw(size: CGFloat) -> NSImage {
     NSGradient(starting: rgb(0xFFFDF8), ending: rgb(0xE9E3D7))!.draw(in: sheet.bounds, angle: -90)
     // Faint text lines: it is a text file.
     rgb(0xC6BFB0).setFill()
-    for (i, w) in [300, 340, 240, 320, 200].enumerated() {
+    for (i, w) in [300, 340, 240, 300, 200].enumerated() {
         let ly = 372 + CGFloat(i) * 76
-        NSBezierPath(roundedRect: NSRect(x: x(336), y: y(ly + 22), width: CGFloat(w) * s, height: 22 * s),
+        NSBezierPath(roundedRect: NSRect(x: x(L + 74), y: y(ly + 22), width: CGFloat(w) * s, height: 22 * s),
                      xRadius: 11 * s, yRadius: 11 * s).fill()
     }
     ctx.restoreGraphicsState()
     // Fold: a darker triangle turned over the corner, with its own shadow.
     let fold = NSBezierPath()
-    fold.move(to: pt(632, 168))
-    fold.line(to: pt(632, 268))
-    fold.curve(to: pt(662, 298), controlPoint1: pt(632, 285), controlPoint2: pt(645, 298))
-    fold.line(to: pt(762, 298))
+    fold.move(to: pt(R - F, T))
+    fold.line(to: pt(R - F, T + F - 30))
+    fold.curve(to: pt(R - F + 30, T + F), controlPoint1: pt(R - F, T + F - 13), controlPoint2: pt(R - F + 13, T + F))
+    fold.line(to: pt(R, T + F))
     fold.close()
     ctx.saveGraphicsState()
     let foldShadow = NSShadow()
@@ -95,9 +103,9 @@ func draw(size: CGFloat) -> NSImage {
     NSGradient(starting: rgb(0xEDE7DB), ending: rgb(0xCBC3B3))!.draw(in: fold.bounds, angle: -135)
     ctx.restoreGraphicsState()
 
-    // Solid plus badge at the bottom-left corner with a soft shadow.
-    let c = pt(292, 796)
-    let r: CGFloat = 168 * s
+    // Solid plus badge at the bottom-right, inside the plate, with a soft shadow.
+    let c = pt(684, 770)
+    let r: CGFloat = 165 * s
     let badge = NSBezierPath(ovalIn: NSRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2))
     ctx.saveGraphicsState()
     let badgeShadow = NSShadow()
@@ -115,7 +123,7 @@ func draw(size: CGFloat) -> NSImage {
     let gloss = NSBezierPath(ovalIn: NSRect(x: c.x - r * 0.82, y: c.y + r * 0.05, width: r * 1.64, height: r * 0.9))
     NSGradient(starting: rgb(0xFFFFFF, 0.2), ending: rgb(0xFFFFFF, 0.0))!.draw(in: gloss, angle: -90)
     ctx.restoreGraphicsState()
-    let bar: CGFloat = 46 * s, len: CGFloat = 196 * s
+    let bar: CGFloat = 46 * s, len: CGFloat = 192 * s
     ctx.saveGraphicsState()
     let plusShadow = NSShadow()
     plusShadow.shadowColor = rgb(0x000000, 0.3)
